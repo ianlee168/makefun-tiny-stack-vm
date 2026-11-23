@@ -19,6 +19,7 @@ function run(p, inp) {
     const il = op === 1 ? 1 : op === 2 ? 4 : op >= 0x30 && op <= 0x33 ? 2 : 0;
     if (pc + 1 + il > p.length) return t(9);
     const nx = pc + 1 + il;
+    const off = () => { const o = p[pc + 1] | p[pc + 2] << 8; return o >= 32768 ? o - 65536 : o; };
     let np = nx;
     switch (op) {
       case 0x00: return t(0);
@@ -47,9 +48,9 @@ function run(p, inp) {
       case 0x20: if (sp < 2) return t(2); { const b = st[--sp], a = st[--sp]; st[sp++] = a === b ? 1 : 0; } break;
       case 0x21: if (sp < 2) return t(2); { const b = st[--sp], a = st[--sp]; st[sp++] = a < b ? 1 : 0; } break;
       case 0x22: if (sp < 2) return t(2); { const b = st[--sp], a = st[--sp]; st[sp++] = (a >>> 0) < (b >>> 0) ? 1 : 0; } break;
-      case 0x30: { const o = p[pc + 1] | p[pc + 2] << 8; np = nx + (o >= 32768 ? o - 65536 : o); } break;
-      case 0x31: if (sp < 1) return t(2); { const v = st[--sp]; const o = p[pc + 1] | p[pc + 2] << 8; if (v === 0) np = nx + (o >= 32768 ? o - 65536 : o); } break;
-      case 0x32: if (sp < 1) return t(2); { const v = st[--sp]; const o = p[pc + 1] | p[pc + 2] << 8; if (v !== 0) np = nx + (o >= 32768 ? o - 65536 : o); } break;
+      case 0x30: np = nx + off(); break;
+      case 0x31: if (sp < 1) return t(2); { const v = st[--sp]; if (v === 0) np = nx + off(); } break;
+      case 0x32: if (sp < 1) return t(2); { const v = st[--sp]; if (v !== 0) np = nx + off(); } break;
       case 0x33: if (cp === 64) return t(7); cs[cp++] = nx; np = p[pc + 1] | p[pc + 2] << 8; break;
       case 0x34: if (cp === 0) return t(8); np = cs[--cp]; break;
       case 0x40: if (sp < 1) return t(2); { const a = st[sp - 1]; if (a < 0 || a > 255) return t(6); st[sp - 1] = mem[a]; } break;
